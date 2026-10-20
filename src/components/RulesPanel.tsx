@@ -49,7 +49,7 @@ export function RulesPanel({ id, onNotice }: { id: `0x${string}`; onNotice: (m: 
         abi: stipendVaultAbi,
         eventName: 'PaymentQueued',
         args: { id },
-        fromBlock: 'earliest',
+        fromBlock: BigInt(process.env.NEXT_PUBLIC_VAULT_DEPLOY_BLOCK || '0'),
       });
       const open: Pending[] = [];
       for (const l of logs as any[]) {

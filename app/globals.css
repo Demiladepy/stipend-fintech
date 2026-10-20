@@ -5,12 +5,23 @@
 @layer base {
   body {
     font-feature-settings: 'ss01', 'cv11';
+    background-color: #050507;
+    background-image:
+      radial-gradient(900px 500px at 15% -10%, rgba(52, 211, 153, 0.09), transparent 60%),
+      radial-gradient(700px 420px at 95% 0%, rgba(139, 92, 246, 0.07), transparent 60%),
+      linear-gradient(rgba(255, 255, 255, 0.022) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.022) 1px, transparent 1px);
+    background-size: auto, auto, 56px 56px, 56px 56px;
+    background-attachment: fixed;
+  }
+  ::selection {
+    background: rgba(52, 211, 153, 0.3);
   }
 }
 
 @layer components {
   .card {
-    @apply rounded-2xl border border-edge bg-panel p-6;
+    @apply rounded-2xl border border-white/[0.07] bg-white/[0.025] p-6 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)] backdrop-blur-md;
   }
   .btn {
     @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40;
@@ -25,7 +36,7 @@
     @apply btn border border-red-900/60 bg-red-950/40 text-red-300 hover:border-red-700;
   }
   .input {
-    @apply w-full rounded-xl border border-edge bg-ink px-4 py-2.5 text-sm text-zinc-100 outline-none placeholder:text-zinc-600 focus:border-accent;
+    @apply w-full rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-zinc-100 outline-none placeholder:text-zinc-600 focus:border-accent;
   }
   .label {
     @apply mb-1.5 block text-xs font-medium uppercase tracking-wide text-zinc-500;
