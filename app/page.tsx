@@ -85,10 +85,8 @@ export default function Home() {
             Stipend Fintech · Topic F Agent Wallet · Live on Base
           </p>
           <h1 className="anim-up anim-d1 mt-4 max-w-2xl font-display text-4xl font-semibold leading-[1.1] tracking-tight text-zinc-50 sm:text-5xl lg:text-6xl">
-            <TextReveal text="Pocket money" />
-            <span className="text-shimmer">
-              <TextReveal text="for AI agents." delay={0.15} />
-            </span>
+            <TextReveal text="Pocket money" />{' '}
+            <TextReveal text="for AI agents." wordClassName="text-shimmer" delay={0.15} />
           </h1>
           <p className="anim-up anim-d2 mt-5 max-w-lg text-base leading-relaxed text-zinc-400 sm:text-lg">
             Agents are starting to spend money. Today that means handing them

@@ -1,23 +1,34 @@
 'use client';
 
 import { motion, useMotionTemplate, useMotionValue } from 'motion/react';
+import type React from 'react';
 import type { ReactNode } from 'react';
 
 /** Word-by-word blur reveal for headlines. */
-export function TextReveal({ text, className = '', delay = 0 }: { text: string; className?: string; delay?: number }) {
+export function TextReveal({
+  text,
+  className = '',
+  wordClassName = '',
+  delay = 0,
+}: {
+  text: string;
+  className?: string;
+  wordClassName?: string;
+  delay?: number;
+}) {
   return (
     <span className={className}>
       {text.split(' ').map((w, i) => (
         <motion.span
           key={i}
-          className="inline-block"
+          className={`inline-block ${wordClassName}`}
           initial={{ opacity: 0, y: 14, filter: 'blur(8px)' }}
           animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
           transition={{ duration: 0.55, delay: delay + i * 0.07, ease: [0.22, 1, 0.36, 1] }}
         >
-          {w}&nbsp;
+          {w}
         </motion.span>
-      ))}
+      )).reduce<React.ReactNode[]>((acc, el, i) => (i ? [...acc, ' ', el] : [el]), [])}
     </span>
   );
 }
