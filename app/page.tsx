@@ -132,14 +132,14 @@ export default function Home() {
         <div className="mx-auto max-w-5xl px-6 py-10">
           <Reveal>
             <p className="max-w-3xl font-display text-xl leading-snug text-zinc-200 sm:text-2xl">
-              This is wallet-enforced delegation — not vault-based streaming like
-              Sablier. The contract holds the funds. The limits fire there.
+              The contract holds the money and checks every rule itself. No app,
+              agent or company can spend past the limits you set.
             </p>
           </Reveal>
           <Reveal delay={120}>
             <div className="mt-8 grid grid-cols-2 gap-6 border-t border-edge/60 pt-8 sm:grid-cols-4">
               {[
-                [<CountUp key="t" to={21} suffix="/21" />, 'contract tests passing'],
+                [<CountUp key="t" to={49} suffix="/49" />, 'contract tests passing'],
                 [<CountUp key="c" to={3} />, 'chains, one balance'],
                 [<CountUp key="s" to={1} />, 'signature to fund cross-chain'],
                 [<span key="g" className="font-mono">&lt;1¢</span>, 'to enforce a rule on Base'],
@@ -337,19 +337,19 @@ export default function Home() {
       <footer className="mt-auto border-t border-edge/60">
         <div className="mx-auto flex max-w-5xl flex-col gap-2 px-6 py-8 text-xs text-zinc-600 sm:flex-row sm:items-center sm:justify-between">
           <p>
-            Wallet-enforced rules — not vault-based streaming. Enforced on Base;
+            Spending rules enforced on Base by the contract that holds the funds;
             funded cross-chain via Universal Accounts.
           </p>
           <p>
             <a
               className="underline hover:text-zinc-400"
-              href="https://github.com/Demiladepy/stipend"
+              href="https://github.com/Demiladepy/stipend-fintech"
               target="_blank"
               rel="noreferrer"
             >
               GitHub
             </a>{' '}
-            · UXmaxx 2026 · Particle UA Track
+            · FinTechathon 2026 · Topic F: Agent Wallet
           </p>
         </div>
       </footer>
