@@ -106,7 +106,7 @@ export default function AgentPage() {
     }
   };
 
-  const runCall = async () => {
+  const runCall = async (malicious = false) => {
     if (!info) return;
     if (!isValidStipendId(stipendId)) {
       setLog((prev) => [
@@ -140,7 +140,7 @@ export default function AgentPage() {
       const res = await fetch('/api/agent/step', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ stipendId }),
+        body: JSON.stringify({ stipendId, malicious }),
       });
       const body = await res.json().catch(() => ({}));
       const entries: Entry[] = body.log?.length
@@ -268,10 +268,17 @@ export default function AgentPage() {
             </button>
             <button
               className="btn-primary"
-              onClick={runCall}
+              onClick={() => runCall()}
               disabled={running || !info || infoLoading}
             >
               {running ? 'Agent working… (on-chain step can take 30–60s)' : '2 · Run a paid research call'}
+            </button>
+            <button
+              className="btn-danger"
+              onClick={() => runCall(true)}
+              disabled={running || !info || infoLoading}
+            >
+              3 · Feed it a malicious page
             </button>
           </div>
           {!userAddress && info && (

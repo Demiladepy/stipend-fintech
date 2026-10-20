@@ -6,8 +6,8 @@ Stipend gives AI agents a spending allowance whose rules are enforced by a smart
 
 1. **Smart contracts on Base**: the rules engine (`StipendVault.sol`). The core; every other layer can fail without letting money leave outside the rules.
 2. **Funding**: Particle Network Universal Accounts, fund from any token on any chain. All limits are in USDC.
-3. **AI agent** (`app/agent`, `app/api/agent`): does the task, checks its budget, pays per call.
-4. **Dashboard** (`app/dashboard`, `app/create`): create a stipend, watch spending, revoke.
+3. **AI agent** (`app/agent`, `app/api/agent`): does the task, pays an x402 API per call (`app/api/research`), and has a malicious-page button that shows `RecipientNotAllowed()` blocking an injected payment.
+4. **Dashboard** (`app/dashboard`, `app/create`): create a stipend, set safety rules (per-payment cap, payment count, approval threshold, expiry, guardian, approved recipients), pause, approve queued payments, revoke.
 5. **Alerts and monitoring**: roadmap (Telegram/email, anomaly auto-pause through the guardian role).
 
 ## One paid API call

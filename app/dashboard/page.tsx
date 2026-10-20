@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { parseAbiItem } from 'viem';
 import { AppShell, PageHeader } from '@/components/AppShell';
+import { RulesPanel } from '@/components/RulesPanel';
 import { PERIOD_PRESETS, periodLabel, VAULT_ADDRESS } from '@/lib/config';
 import { loadStipends, saveStipend } from '@/lib/store';
 import {
@@ -307,6 +308,7 @@ export default function DashboardPage() {
                   </div>
                 )}
 
+                {!policy.revoked && <RulesPanel id={id} onNotice={setNotice} />}
                 {!policy.revoked && editFor !== id && (
                   <div className="mt-4 flex flex-wrap items-center gap-2">
                     {topUpFor === id ? (

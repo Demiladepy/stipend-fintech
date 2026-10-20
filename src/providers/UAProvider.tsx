@@ -65,6 +65,7 @@ type UAContextType = {
   ) => Promise<CreateStipendResult>;
   fundStipendCrossChain: (id: `0x${string}`, amount: string) => Promise<string>;
   revokeStipend: (id: `0x${string}`) => Promise<string>;
+  callVault: (functionName: string, args: readonly unknown[]) => Promise<string>;
   claimStipend: (id: `0x${string}`, amount: string) => Promise<string>;
   modifyStipend: (
     id: `0x${string}`,
@@ -333,6 +334,25 @@ export function UAProvider({ children }: { children: ReactNode }) {
     [universalAccount, signAndSend],
   );
 
+  const callVault = useCallback(
+    async (functionName: string, args: readonly unknown[]): Promise<string> => {
+      if (!universalAccount) throw new Error('Log in first');
+      const data = encodeFunctionData({
+        abi: stipendVaultAbi,
+        functionName: functionName as any,
+        args: args as any,
+      });
+      const tx = await universalAccount.createUniversalTransaction({
+        chainId: BASE_CHAIN_ID,
+        expectTokens: [],
+        transactions: [{ to: VAULT_ADDRESS, data }],
+      });
+      const { transactionId } = await signAndSend(tx);
+      return transactionId;
+    },
+    [universalAccount, signAndSend],
+  );
+
   const revokeStipend = useCallback(
     async (id: `0x${string}`): Promise<string> => {
       if (!universalAccount) throw new Error('Log in first');
@@ -431,6 +451,7 @@ export function UAProvider({ children }: { children: ReactNode }) {
       createStipendCrossChain,
       fundStipendCrossChain,
       revokeStipend,
+      callVault,
       claimStipend,
       modifyStipend,
       approveAgentOnStipend,
@@ -444,6 +465,7 @@ export function UAProvider({ children }: { children: ReactNode }) {
       createStipendCrossChain,
       fundStipendCrossChain,
       revokeStipend,
+      callVault,
       claimStipend,
       modifyStipend,
       approveAgentOnStipend,
