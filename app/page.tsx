@@ -12,29 +12,29 @@ const Hero3D = dynamic(() => import('@/components/Hero3D'), { ssr: false });
 
 const SCENES = [
   {
-    title: 'AI agent budgets',
-    eyebrow: 'Hero scene',
-    body: 'Give an agent a weekly pot and a per-call limit. It pays for research APIs itself — and the contract rejects anything over the cap. The agent never holds your keys or your funds.',
-    detail: 'Demo path: create a stipend → approve the agent → run paid calls until an overspend is blocked on-chain.',
+    title: 'A parent funds a student’s AI assistant',
+    eyebrow: 'Families · Topic F',
+    body: 'Tolu’s mum gives Tolu’s study assistant $5 a week: $2 per payment, approved data APIs only, expiring at the end of term. It pays per call for prices, reviews and FX rates, asks before anything over $1, and cannot be tricked into paying a stranger.',
+    detail: 'Demo path: create a stipend → approve the agent → it pays x402 APIs → a malicious page’s payment fails with RecipientNotAllowed().',
     href: '/agent',
     cta: 'Open agent demo',
     image: '/images/home-agent.jpg',
     alt: 'Laptop in a dark room with a soft emerald glow on a terminal screen',
   },
   {
-    title: 'Subscriptions you control',
-    eyebrow: 'Creators',
-    body: 'Recurring support for a creator with an instant cut-off. When you stop the rule, the unspent balance refunds to you — no platform middleman to beg.',
-    detail: 'Same create flow. Recipient is the creator’s wallet. Revoke from My stipends anytime.',
+    title: 'Pay-per-call APIs',
+    eyebrow: 'x402',
+    body: 'A research task calls 200 paid data sources at $0.01 each. Nobody approves 200 pop-ups. The agent pays each 402 request itself, inside per-payment, per-period and payment-count limits.',
+    detail: 'Every payment and every blocked attempt is an on-chain event, linked to Basescan.',
     href: '/create',
-    cta: 'Set up a subscription rule',
+    cta: 'Create a stipend',
     image: '/images/home-creator.jpg',
     alt: 'Quiet desk with notebook, coffee, and a soft phone glow',
   },
   {
-    title: 'Allowances',
-    eyebrow: 'Families',
-    body: 'Send a weekly allowance that cannot be spent all at once. Top up, change the amount, or stop and take the remainder back.',
+    title: 'Guardian & approvals',
+    eyebrow: 'Security',
+    body: 'A guardian can pause spending but never spend. Payments over the owner’s threshold wait in an approval queue. Revoke refunds the remainder in one transaction.',
     detail: 'Period caps and lifetime caps live in the contract. The app only helps you write the rule.',
     href: '/create',
     cta: 'Create an allowance',
@@ -65,12 +65,13 @@ export default function Home() {
             stipend.
           </p>
           <h1 className="anim-up anim-d1 mt-4 max-w-2xl font-display text-4xl font-semibold leading-[1.1] tracking-tight text-zinc-50 sm:text-5xl lg:text-6xl">
-            Money with the rules{' '}
-            <span className="text-shimmer">built in.</span>
+            Pocket money{' '}
+            <span className="text-shimmer">for AI agents.</span>
           </h1>
           <p className="anim-up anim-d2 mt-5 max-w-lg text-base leading-relaxed text-zinc-400 sm:text-lg">
-            Who gets paid, how much, how often — enforced on-chain. Fund from
-            any chain. Revoke any time.
+            Agents are starting to spend money. Today that means handing them
+            your card. Stipend gives them a capped allowance instead, enforced
+            by a smart contract on Base that nobody can override.
           </p>
 
           <div className="anim-up anim-d2 mt-10 flex flex-wrap items-center gap-3">

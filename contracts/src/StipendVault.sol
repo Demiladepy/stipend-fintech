@@ -35,6 +35,30 @@ contract StipendVault is ReentrancyGuard {
     /// @dev per-stipend approved agent addresses that may claim on the recipient's behalf
     mapping(bytes32 => mapping(address => bool)) public agentApproved;
 
+    /// @dev Stipend Fintech rules layered on top of a Policy (all optional; 0 = off).
+    struct Rules {
+        uint256 txCap; // max per single payment
+        uint64 expiry; // unix time after which nothing can be spent
+        uint32 maxPerPeriodCount; // max number of payments per period window
+        uint256 approvalThreshold; // payments above this are queued for the owner
+        address guardian; // may pause / unpause, never spend
+        bool paused;
+        bool allowlistOn; // when true, pay() recipients must be allowlisted
+        uint32 periodCount; // payments made in the current window
+        uint256 countPeriodStart; // window the count belongs to
+    }
+
+    struct Pending {
+        bytes32 id;
+        address to;
+        uint256 amount;
+        bool done;
+    }
+
+    mapping(bytes32 => Rules) public rules;
+    mapping(bytes32 => mapping(address => bool)) public recipientAllowed;
+    Pending[] public pending;
+
     event StipendCreated(
         bytes32 indexed id,
         address indexed sender,
@@ -64,6 +88,19 @@ contract StipendVault is ReentrancyGuard {
     error InsufficientBalance();
     error CapBelowSpent();
     error NativeTransferFailed();
+    error OverTxCap();
+    error OverPeriodCount();
+    error RecipientNotAllowed();
+    error StipendExpired();
+    error StipendPaused();
+    error NotOwnerOrGuardian();
+    error AlreadyDone();
+
+    event RulesSet(bytes32 indexed id, uint256 txCap, uint64 expiry, uint32 maxPerPeriodCount, uint256 approvalThreshold, address guardian);
+    event RecipientAllowed(bytes32 indexed id, address indexed recipient, bool allowed);
+    event Paused(bytes32 indexed id, address indexed by, bool paused);
+    event Paid(bytes32 indexed id, address indexed agent, address indexed to, uint256 amount);
+    event PaymentQueued(uint256 indexed pendingId, bytes32 indexed id, address indexed to, uint256 amount);
 
     /// @notice Compute the deterministic id for a stipend.
     function computeId(address sender, address recipient, bytes32 salt) public pure returns (bytes32) {
@@ -141,11 +178,106 @@ contract StipendVault is ReentrancyGuard {
     /// @dev Callable by the recipient or an approved agent. Checks-effects-interactions +
     ///      nonReentrant. Period window rolls forward in whole `periodSeconds` increments.
     function claim(bytes32 id, uint256 amount) external nonReentrant {
+        Policy storage p = _authAgent(id);
+        _spend(id, p, amount);
+        _payout(p.token, p.recipient, amount);
+        emit Claimed(id, msg.sender, p.recipient, amount);
+    }
+
+    /// @notice Agent pays an approved recipient (e.g. an x402 API). Over the approval threshold it is queued.
+    function pay(bytes32 id, address to, uint256 amount) external nonReentrant returns (uint256 pendingId) {
+        Policy storage p = _authAgent(id);
+        Rules storage r = rules[id];
+        if (r.allowlistOn && !recipientAllowed[id][to] && to != p.recipient) revert RecipientNotAllowed();
+        if (r.approvalThreshold != 0 && amount > r.approvalThreshold) {
+            _preCheck(p, r, amount);
+            pending.push(Pending(id, to, amount, false));
+            pendingId = pending.length - 1;
+            emit PaymentQueued(pendingId, id, to, amount);
+            return pendingId;
+        }
+        _spend(id, p, amount);
+        _payout(p.token, to, amount);
+        emit Paid(id, msg.sender, to, amount);
+        return type(uint256).max;
+    }
+
+    /// @notice Owner approves a queued payment; every rule except the threshold is re-checked.
+    function approvePayment(uint256 pendingId) external nonReentrant {
+        Pending storage q = pending[pendingId];
+        if (q.done) revert AlreadyDone();
+        Policy storage p = policies[q.id];
+        if (msg.sender != p.sender) revert NotSender();
+        q.done = true;
+        _spend(q.id, p, q.amount);
+        _payout(p.token, q.to, q.amount);
+        emit Paid(q.id, msg.sender, q.to, q.amount);
+    }
+
+    function pendingCount() external view returns (uint256) {
+        return pending.length;
+    }
+
+    /// @notice Owner sets the extra rules. Guardian may only pause.
+    function setRules(
+        bytes32 id,
+        uint256 txCap,
+        uint64 expiry,
+        uint32 maxPerPeriodCount,
+        uint256 approvalThreshold,
+        address guardian,
+        bool allowlistOn
+    ) external {
         Policy storage p = policies[id];
+        if (p.sender == address(0)) revert StipendNotFound();
+        if (msg.sender != p.sender) revert NotSender();
+        Rules storage r = rules[id];
+        r.txCap = txCap;
+        r.expiry = expiry;
+        r.maxPerPeriodCount = maxPerPeriodCount;
+        r.approvalThreshold = approvalThreshold;
+        r.guardian = guardian;
+        r.allowlistOn = allowlistOn;
+        emit RulesSet(id, txCap, expiry, maxPerPeriodCount, approvalThreshold, guardian);
+    }
+
+    function setRecipientAllowed(bytes32 id, address to, bool allowed) external {
+        Policy storage p = policies[id];
+        if (p.sender == address(0)) revert StipendNotFound();
+        if (msg.sender != p.sender) revert NotSender();
+        recipientAllowed[id][to] = allowed;
+        emit RecipientAllowed(id, to, allowed);
+    }
+
+    /// @notice Owner or guardian freezes / unfreezes spending.
+    function setPaused(bytes32 id, bool paused_) external {
+        Policy storage p = policies[id];
+        if (p.sender == address(0)) revert StipendNotFound();
+        if (msg.sender != p.sender && msg.sender != rules[id].guardian) revert NotOwnerOrGuardian();
+        rules[id].paused = paused_;
+        emit Paused(id, msg.sender, paused_);
+    }
+
+    function _authAgent(bytes32 id) internal view returns (Policy storage p) {
+        p = policies[id];
         if (p.sender == address(0)) revert StipendNotFound();
         if (p.revoked) revert IsRevoked();
         if (msg.sender != p.recipient && !agentApproved[id][msg.sender]) revert NotAuthorized();
+    }
+
+    function _preCheck(Policy storage p, Rules storage r, uint256 amount) internal view {
         if (amount == 0) revert ZeroAmount();
+        if (r.paused) revert StipendPaused();
+        if (r.expiry != 0 && block.timestamp > r.expiry) revert StipendExpired();
+        if (r.txCap != 0 && amount > r.txCap) revert OverTxCap();
+        if (p.spent + amount > p.totalCap) revert OverTotalCap();
+        if (amount > p.balance) revert InsufficientBalance();
+    }
+
+    function _spend(bytes32 id, Policy storage p, uint256 amount) internal {
+        Rules storage r = rules[id];
+        if (p.revoked) revert IsRevoked();
+        _preCheck(p, r, amount);
 
         // Period rollover: advance by whole periods so window boundaries stay aligned.
         uint256 elapsed = block.timestamp - p.lastPeriodStart;
@@ -154,18 +286,18 @@ contract StipendVault is ReentrancyGuard {
             p.lastPeriodStart += periods * p.periodSeconds;
             p.periodSpent = 0;
         }
+        if (r.countPeriodStart != p.lastPeriodStart) {
+            r.countPeriodStart = p.lastPeriodStart;
+            r.periodCount = 0;
+        }
 
         if (p.periodSpent + amount > p.amountPerPeriod) revert OverPeriodCap();
-        if (p.spent + amount > p.totalCap) revert OverTotalCap();
-        if (amount > p.balance) revert InsufficientBalance();
+        if (r.maxPerPeriodCount != 0 && r.periodCount + 1 > r.maxPerPeriodCount) revert OverPeriodCount();
 
+        r.periodCount += 1;
         p.periodSpent += amount;
         p.spent += amount;
         p.balance -= amount;
-
-        _payout(p.token, p.recipient, amount);
-
-        emit Claimed(id, msg.sender, p.recipient, amount);
     }
 
     /// @notice Revoke a stipend (sender only) and refund the remaining custodied balance.

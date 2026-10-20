@@ -341,3 +341,86 @@ contract StipendVaultTest is Test {
         assertEq(vault.getPolicy(id).spent, 0);
     }
 }
+
+contract StipendRulesTest is StipendVaultTest {
+    address api = makeAddr("api");
+    address guardian = makeAddr("guardian");
+
+    function _withRules(uint256 txCap, uint64 expiry, uint32 maxCount, uint256 threshold) internal returns (bytes32 id) {
+        id = _createUsdc();
+        vm.startPrank(sender);
+        vault.approveAgent(id, agent, true);
+        vault.setRules(id, txCap, expiry, maxCount, threshold, guardian, true);
+        vault.setRecipientAllowed(id, api, true);
+        vm.stopPrank();
+    }
+
+    function test_pay_allowlistedRecipient() public {
+        bytes32 id = _withRules(0, 0, 0, 0);
+        vm.prank(agent);
+        vault.pay(id, api, 1e6);
+        assertEq(usdc.balanceOf(api), 1e6);
+    }
+
+    function test_pay_recipientNotAllowed() public {
+        bytes32 id = _withRules(0, 0, 0, 0);
+        vm.prank(agent);
+        vm.expectRevert(StipendVault.RecipientNotAllowed.selector);
+        vault.pay(id, stranger, 1e6);
+    }
+
+    function test_pay_overTxCap() public {
+        bytes32 id = _withRules(2e6, 0, 0, 0);
+        vm.prank(agent);
+        vm.expectRevert(StipendVault.OverTxCap.selector);
+        vault.pay(id, api, 3e6);
+    }
+
+    function test_pay_expired() public {
+        bytes32 id = _withRules(0, uint64(block.timestamp + 1 days), 0, 0);
+        vm.warp(block.timestamp + 2 days);
+        vm.prank(agent);
+        vm.expectRevert(StipendVault.StipendExpired.selector);
+        vault.pay(id, api, 1e6);
+    }
+
+    function test_pay_overPeriodCount() public {
+        bytes32 id = _withRules(0, 0, 1, 0);
+        vm.startPrank(agent);
+        vault.pay(id, api, 1e6);
+        vm.expectRevert(StipendVault.OverPeriodCount.selector);
+        vault.pay(id, api, 1e6);
+        vm.stopPrank();
+    }
+
+    function test_guardian_pauseBlocksButCannotSpend() public {
+        bytes32 id = _withRules(0, 0, 0, 0);
+        vm.prank(guardian);
+        vault.setPaused(id, true);
+        vm.prank(agent);
+        vm.expectRevert(StipendVault.StipendPaused.selector);
+        vault.pay(id, api, 1e6);
+        vm.prank(guardian);
+        vm.expectRevert(StipendVault.NotAuthorized.selector);
+        vault.pay(id, guardian, 1e6);
+        vm.prank(stranger);
+        vm.expectRevert(StipendVault.NotOwnerOrGuardian.selector);
+        vault.setPaused(id, false);
+    }
+
+    function test_pay_overThresholdQueuesThenOwnerApproves() public {
+        bytes32 id = _withRules(0, 0, 0, 1e6);
+        vm.prank(agent);
+        uint256 q = vault.pay(id, api, 1.5e6);
+        assertEq(usdc.balanceOf(api), 0);
+        vm.prank(agent);
+        vm.expectRevert(StipendVault.NotSender.selector);
+        vault.approvePayment(q);
+        vm.prank(sender);
+        vault.approvePayment(q);
+        assertEq(usdc.balanceOf(api), 1.5e6);
+        vm.prank(sender);
+        vm.expectRevert(StipendVault.AlreadyDone.selector);
+        vault.approvePayment(q);
+    }
+}

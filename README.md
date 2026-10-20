@@ -1,3 +1,14 @@
+# Stipend Fintech
+
+**Pocket money for AI agents.** Agents are starting to spend money. Today that means handing them your card. Stipend gives them a capped allowance instead, enforced by a smart contract on Base that no agent, app or company can override.
+
+Built for the Shenzhen Fintech Hackathon, **Topic F: Agent Wallet**. Lead story: a parent funds a student's AI assistant with a weekly cap.
+
+- Technical documentation: [docs/TECHNICAL.md](docs/TECHNICAL.md)
+- Security self-assessment: [docs/SECURITY.md](docs/SECURITY.md)
+
+---
+
 # Stipend
 
 **Money with the rules built in.**

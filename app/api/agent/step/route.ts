@@ -28,6 +28,11 @@ const FRIENDLY_ERRORS: Record<string, string> = {
   InsufficientBalance: 'the stipend pot is empty',
   IsRevoked: 'the stipend was revoked by its owner',
   NotAuthorized: 'this agent is not approved on the stipend — run step 1 first',
+  OverTxCap: 'this single payment is over the per-payment limit',
+  OverPeriodCount: 'the agent has used up its number of payments for this period',
+  RecipientNotAllowed: 'this recipient is not on the owner's approved list',
+  StipendExpired: 'the stipend has passed its expiry date',
+  StipendPaused: 'the owner or guardian has paused this stipend',
 };
 
 export async function POST(req: NextRequest) {
