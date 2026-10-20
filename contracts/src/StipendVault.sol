@@ -187,8 +187,11 @@ contract StipendVault is ReentrancyGuard {
     /// @notice Agent pays an approved recipient (e.g. an x402 API). Over the approval threshold it is queued.
     function pay(bytes32 id, address to, uint256 amount) external nonReentrant returns (uint256 pendingId) {
         Policy storage p = _authAgent(id);
+        // Only owner-approved agents may route funds with pay(); the recipient can still pull via claim().
+        if (!agentApproved[id][msg.sender]) revert NotAuthorized();
         Rules storage r = rules[id];
-        if (r.allowlistOn && !recipientAllowed[id][to] && to != p.recipient) revert RecipientNotAllowed();
+        // Safe by default: with the allowlist off, pay() can only reach the stipend's own recipient.
+        if (to != p.recipient && (!r.allowlistOn || !recipientAllowed[id][to])) revert RecipientNotAllowed();
         if (r.approvalThreshold != 0 && amount > r.approvalThreshold) {
             _preCheck(p, r, amount);
             pending.push(Pending(id, to, amount, false));

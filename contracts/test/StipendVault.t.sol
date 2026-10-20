@@ -408,6 +408,27 @@ contract StipendRulesTest is StipendVaultTest {
         vault.setPaused(id, false);
     }
 
+    // R1: with the allowlist switched off, pay() may only reach the stipend's own recipient.
+    function test_pay_allowlistOff_onlyRecipient() public {
+        bytes32 id = _createUsdc();
+        vm.prank(sender);
+        vault.approveAgent(id, agent, true);
+        vm.prank(agent);
+        vm.expectRevert(StipendVault.RecipientNotAllowed.selector);
+        vault.pay(id, stranger, 1e6);
+        vm.prank(agent);
+        vault.pay(id, recipient, 1e6);
+        assertEq(usdc.balanceOf(recipient), 1e6);
+    }
+
+    // R2: the recipient can no longer route funds with pay(); only approved agents can.
+    function test_pay_recipientCannotPay() public {
+        bytes32 id = _withRules(0, 0, 0, 0);
+        vm.prank(recipient);
+        vm.expectRevert(StipendVault.NotAuthorized.selector);
+        vault.pay(id, api, 1e6);
+    }
+
     function test_pay_overThresholdQueuesThenOwnerApproves() public {
         bytes32 id = _withRules(0, 0, 0, 1e6);
         vm.prank(agent);
