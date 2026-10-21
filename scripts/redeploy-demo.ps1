@@ -9,11 +9,14 @@ $USDC  = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
 $OLD   = "0x55aDDc886a6C14C1152345AB0d47Be7b0F694D70"
 $OLDID = "0xe33a82028d9e056699ff46556454a9872d5ee0d1a30cf5ee6fddbe01a23d6538"
 $GUARD = "0x40F7111cD52c7B34Bc443210eB9109bBaAF8Bd98"
-if (-not $env:PK) { throw "Set `$env:PK first" }
+if (-not $env:PK -or $env:PK -notmatch "^0x[0-9a-fA-F]{64}$") { throw "Set `$env:PK to the 0x... agent private key (64 hex chars)" }
 $AGENT = & $cast wallet address $env:PK
+if ($LASTEXITCODE -ne 0) { throw "Could not read the private key" }
+Write-Host "Agent: $AGENT"
 
 function Send($to, $sig) {
   $out = & $cast send $to $sig @args -r $R --private-key $env:PK
+  if ($LASTEXITCODE -ne 0) { throw "$sig failed: $out" }
   $hash = ($out | Select-String "^transactionHash").ToString().Split()[-1]
   Write-Host "  $sig -> $hash"
   Start-Sleep -Seconds 3
@@ -26,6 +29,7 @@ Write-Host "2/5 Deploy the fixed vault"
 Push-Location "$PSScriptRoot\..\contracts"
 $dep = & $forge create src/StipendVault.sol:StipendVault --rpc-url $R --private-key $env:PK --broadcast
 Pop-Location
+if ($LASTEXITCODE -ne 0) { throw "Deploy failed: $dep" }
 $VAULT = ($dep | Select-String "Deployed to:").ToString().Split()[-1]
 $DTX   = ($dep | Select-String "Transaction hash:").ToString().Split()[-1]
 $BLOCK = ((& $cast receipt $DTX -r $R) | Select-String "^blockNumber").ToString().Split()[-1]
