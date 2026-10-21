@@ -9,11 +9,15 @@ Agents are starting to spend money. Today that means handing them your card.<br/
 
 [**Live app**](https://stipend-fintech.vercel.app) · [**Agent demo**](https://stipend-fintech.vercel.app/agent) · [Technical docs](docs/TECHNICAL.md) · [Security self-assessment](docs/SECURITY.md)
 
-![Base mainnet](https://img.shields.io/badge/Base-mainnet-0052FF) ![USDC](https://img.shields.io/badge/USDC-limits-2775CA) ![x402](https://img.shields.io/badge/x402-pay--per--call-34d399) ![Tests](https://img.shields.io/badge/forge_test-49%2F49-34d399) ![Track](https://img.shields.io/badge/FinTechathon-Topic_F_Agent_Wallet-8b5cf6)
+![Base mainnet](https://img.shields.io/badge/Base-mainnet-0052FF) ![USDC](https://img.shields.io/badge/USDC-limits-2775CA) ![x402](https://img.shields.io/badge/x402-pay--per--call-34d399) ![Tests](https://img.shields.io/badge/forge_test-51%2F51-34d399) ![Track](https://img.shields.io/badge/FinTechathon-Topic_F_Agent_Wallet-8b5cf6)
 
 </div>
 
 ---
+
+## The guarantee
+
+An agent can never move more money, to anyone, than its owner allowed. This holds even if the agent's key is stolen or a malicious web page talks the agent into paying a stranger, because every limit is checked inside the contract that custodies the money.
 
 ## The story in one paragraph
 
@@ -68,19 +72,14 @@ Demo stipend id: `0xe33a82028d9e056699ff46556454a9872d5ee0d1a30cf5ee6fddbe01a23d
 
 ## Architecture
 
-```
- Student ──task──▶ AI agent ──GET──▶ Paid API (x402)
-                      │  ◀── 402: pay $0.05 ──┘
-                      │
-                      ├─ pre-check budget (off-chain, to be helpful)
-                      ▼
-            StipendVault.pay() / claim()  on Base   ◀── owner rules, guardian pause
-                      │  every limit checked (to be safe)
-          ┌───────────┴────────────┐
-     within rules              outside rules
-   USDC → API, data served     revert with a named error, nothing moves
-                      │
-                 event log ──▶ dashboard feed · approval queue · alerts (roadmap)
+```mermaid
+flowchart LR
+    OWNER["Owner (parent)<br/>email login"] -- "create rule + fund<br/>(any chain, one signature)" --> UA["Particle<br/>Universal Account"]
+    UA -- "USDC lands on Base" --> VAULT["StipendVault<br/>holds funds, enforces rules"]
+    GUARD["Guardian"] -- "pause / unpause" --> VAULT
+    AGENT["AI agent<br/>(approved key)"] -- "claim / pay" --> VAULT
+    VAULT -- "pays per call" --> API["Paid research API<br/>(HTTP 402)"]
+    VAULT -- "outside the rules:<br/>revert with named error" --x AGENT
 ```
 
 | Layer | Built with | Where |
@@ -111,7 +110,7 @@ pnpm dev
 ```
 
 ```bash
-cd contracts && forge soldeer install && forge test   # 49 passing
+cd contracts && forge soldeer install && forge test   # 51 passing
 ```
 
 ## Roadmap

@@ -29,7 +29,7 @@ The most an attacker can take is what the owner already agreed the agent could s
 - **On-chain enforcement.** Every limit is checked inside the contract, so off-chain code cannot bypass it.
 - **Off-chain pre-checks.** The agent checks the rules before paying, so normal use never hits a revert.
 - **Every action logged.** Payments, queued payments, rule changes and pauses emit events.
-- **Testing.** Foundry unit tests for every rule and error (`forge test`, 49 passing).
+- **Testing.** Foundry unit tests for every rule and error (`forge test`, 51 passing).
 - **Standard building blocks.** OpenZeppelin `SafeERC20` and `ReentrancyGuard`.
 
 ## Known risks
